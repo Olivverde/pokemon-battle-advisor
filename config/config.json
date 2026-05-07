@@ -1,0 +1,27 @@
+{
+  "format": "gen9ou",
+  "data": {
+    "n_replays": 500,
+    "raw_dir": "data/raw",
+    "processed_dir": "data/processed",
+    "splits_dir": "data/splits"
+  },
+  "model": {
+    "type": "random_forest",
+    "hyperparams": {
+      "n_estimators": 100,
+      "max_depth": 15,
+      "random_state": 42
+    }
+  },
+  "training": {
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "test_ratio": 0.15,
+    "random_state": 42
+  },
+  "api": {
+    "host": "0.0.0.0",
+    "port": 8000
+  }
+}
