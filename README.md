@@ -2,6 +2,22 @@
 
 Sistema MLOps end-to-end para análisis y predicción de acciones óptimas en batallas competitivas de Pokémon Showdown.
 
+## Estado del Proyecto ✅
+
+- **✅ Data Ingestion**: 500 logs de batallas descargados
+- **✅ Data Processing**: Parser implementado, 21,856 turnos extraídos
+- **🚧 Model Training**: Próximo paso
+- **⏳ API Deployment**: Pendiente
+
+## Dataset Generado 📊
+
+**Estadísticas del dataset:**
+- **21,856 turnos** extraídos de **497 batallas**
+- **Distribución de acciones**: MOVE_UNKNOWN (40%), SWITCH (35%), STATUS (25%)
+- **Turnos promedio por batalla**: 22.5
+- **HP promedio**: 76.2%
+- **Pokémon más usados**: Gliscor, Great Tusk, Gholdengo, Volcanona, Corviknight
+
 ## Descripción del Proyecto
 
 **Pokémon Battle Advisor** es un proyecto de portafolio que demuestra capacidades en:
@@ -150,13 +166,15 @@ flake8 src/ tests/
 
 ## Roadmap
 
-- [ ] Completar parser de logs
-- [ ] Implementar feature engineering
-- [ ] Entrenar modelos baseline
-- [ ] CI/CD con GitHub Actions
-- [ ] Despliegue en AWS Lambda
-- [ ] Dashboard de monitoreo
-- [ ] Versionado de modelos (MLflow)
+- [x] **Data Ingestion** - Descargar logs desde Pokémon Showdown API
+- [x] **Data Processing** - Parser implementado, dataset generado
+- [ ] **Feature Engineering** - Variables adicionales para el modelo
+- [ ] **Model Training** - Entrenar clasificador baseline
+- [ ] **Model Evaluation** - Validación y métricas
+- [ ] **API Development** - FastAPI para inferencia
+- [ ] **AWS Deployment** - Lambda + API Gateway
+- [ ] **CI/CD** - GitHub Actions para automatización
+- [ ] **Monitoring** - Logging y métricas en producción
 
 ## Licencia
 
