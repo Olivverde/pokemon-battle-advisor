@@ -37,7 +37,10 @@ def parse_replay_log(log_content: str, battle_id: str) -> pd.DataFrame:
     turn_data = []
 
     # Buffer para acciones del turno actual
-    current_turn_actions = {"p1": None, "p2": None}
+    current_turn_actions = {
+        "p1": {"type": None, "move_name": None},
+        "p2": {"type": None, "move_name": None},
+    }
 
     for line in lines:
         if not line.strip() or line.startswith(">"):
@@ -62,40 +65,49 @@ def parse_replay_log(log_content: str, battle_id: str) -> pd.DataFrame:
 
         # Cambio de Pokémon
         elif tag == "switch":
-            player = parts[2][0:2]  # p1a o p2a
-            pokemon_full = parts[3]
-            hp_str = parts[4] if len(parts) > 4 else "100/100"
+            try:
+                player = parts[2][0:2]  # p1a o p2a
+                pokemon_full = parts[3]
+                hp_str = parts[4] if len(parts) > 4 else "100/100"
 
-            # Extraer especie real (sin nickname ni género)
-            pokemon_species = _extract_pokemon_species(pokemon_full)
-            hp_percent = _parse_hp(hp_str)
+                # Extraer especie real (sin nickname ni género)
+                pokemon_species = _extract_pokemon_species(pokemon_full)
+                hp_percent = _parse_hp(hp_str)
 
-            # Actualizar estado
-            if player.startswith("p1"):
-                game_state["p1_active"] = pokemon_species
-                game_state["p1_hp"] = hp_percent
-                current_turn_actions["p1"] = "SWITCH"
-            else:
-                game_state["p2_active"] = pokemon_species
-                game_state["p2_hp"] = hp_percent
-                current_turn_actions["p2"] = "SWITCH"
+                # Actualizar estado
+                if player.startswith("p1"):
+                    game_state["p1_active"] = pokemon_species
+                    game_state["p1_hp"] = hp_percent
+                    current_turn_actions["p1"] = {"type": "SWITCH", "move_name": None}
+                else:
+                    game_state["p2_active"] = pokemon_species
+                    game_state["p2_hp"] = hp_percent
+                    current_turn_actions["p2"] = {"type": "SWITCH", "move_name": None}
+            except (IndexError, AttributeError) as e:
+                # Skip this malformed line
+                continue
 
         # Movimiento usado
         elif tag == "move":
-            player = parts[2][0:2]
-            move_name = parts[3]
+            try:
+                player = parts[2][0:2]
+                move_name = parts[3]
 
-            # Clasificar movimiento
-            action_type = _classify_move(move_name)
+                # Clasificar movimiento
+                action_type = _classify_move(move_name)
+                action_record = {"type": action_type, "move_name": move_name}
 
-            if player.startswith("p1"):
-                current_turn_actions["p1"] = action_type
-            else:
-                current_turn_actions["p2"] = action_type
+                if player.startswith("p1"):
+                    current_turn_actions["p1"] = action_record
+                else:
+                    current_turn_actions["p2"] = action_record
+            except (IndexError, AttributeError) as e:
+                # Skip this malformed line
+                continue
 
         # Daño recibido
         elif tag == "-damage":
-            if len(parts) >= 4:
+            try:
                 target = parts[2]
                 hp_str = parts[3]
 
@@ -105,10 +117,12 @@ def parse_replay_log(log_content: str, battle_id: str) -> pd.DataFrame:
                     game_state["p1_hp"] = hp_percent
                 elif target.startswith("p2"):
                     game_state["p2_hp"] = hp_percent
+            except (IndexError, AttributeError, ValueError):
+                continue
 
         # Curación
         elif tag == "-heal":
-            if len(parts) >= 4:
+            try:
                 target = parts[2]
                 hp_str = parts[3]
 
@@ -118,6 +132,8 @@ def parse_replay_log(log_content: str, battle_id: str) -> pd.DataFrame:
                     game_state["p1_hp"] = hp_percent
                 elif target.startswith("p2"):
                     game_state["p2_hp"] = hp_percent
+            except (IndexError, AttributeError, ValueError):
+                continue
 
         # Clima
         elif tag == "-weather":
@@ -182,65 +198,74 @@ def parse_replay_log(log_content: str, battle_id: str) -> pd.DataFrame:
 
 def _save_turn_actions(turn_data: List[Dict], game_state: Dict, actions: Dict, battle_id: str):
     """Guarda las acciones de un turno en el dataset"""
+    try:
+        # Acción del jugador 1
+        if actions.get("p1", {}).get("type"):
+            turn_data.append({
+                "battle_id": battle_id,
+                "turn": game_state.get("turn", 0),
+                "player": "p1",
+                "active_pokemon": game_state.get("p1_active", "Unknown"),
+                "hp": game_state.get("p1_hp", 100),
+                "weather": game_state.get("weather"),
+                "terrain": game_state.get("terrain"),
+                "spikes_own": game_state.get("p1_spikes", 0),
+                "spikes_opp": game_state.get("p2_spikes", 0),
+                "stealth_rock_own": game_state.get("p1_stealth_rock", False),
+                "stealth_rock_opp": game_state.get("p2_stealth_rock", False),
+                "action": actions["p1"]["type"],
+                "move_name": actions["p1"]["move_name"]
+            })
 
-    # Acción del jugador 1
-    if actions["p1"]:
-        turn_data.append({
-            "battle_id": battle_id,
-            "turn": game_state["turn"],
-            "player": "p1",
-            "active_pokemon": game_state["p1_active"],
-            "hp": game_state["p1_hp"],
-            "weather": game_state["weather"],
-            "terrain": game_state["terrain"],
-            "spikes_own": game_state["p1_spikes"],
-            "spikes_opp": game_state["p2_spikes"],
-            "stealth_rock_own": game_state["p1_stealth_rock"],
-            "stealth_rock_opp": game_state["p2_stealth_rock"],
-            "action": actions["p1"]
-        })
-
-    # Acción del jugador 2
-    if actions["p2"]:
-        turn_data.append({
-            "battle_id": battle_id,
-            "turn": game_state["turn"],
-            "player": "p2",
-            "active_pokemon": game_state["p2_active"],
-            "hp": game_state["p2_hp"],
-            "weather": game_state["weather"],
-            "terrain": game_state["terrain"],
-            "spikes_own": game_state["p2_spikes"],
-            "spikes_opp": game_state["p1_spikes"],
-            "stealth_rock_own": game_state["p2_stealth_rock"],
-            "stealth_rock_opp": game_state["p1_stealth_rock"],
-            "action": actions["p2"]
-        })
+        # Acción del jugador 2
+        if actions.get("p2", {}).get("type"):
+            turn_data.append({
+                "battle_id": battle_id,
+                "turn": game_state.get("turn", 0),
+                "player": "p2",
+                "active_pokemon": game_state.get("p2_active", "Unknown"),
+                "hp": game_state.get("p2_hp", 100),
+                "weather": game_state.get("weather"),
+                "terrain": game_state.get("terrain"),
+                "spikes_own": game_state.get("p2_spikes", 0),
+                "spikes_opp": game_state.get("p1_spikes", 0),
+                "stealth_rock_own": game_state.get("p2_stealth_rock", False),
+                "stealth_rock_opp": game_state.get("p1_stealth_rock", False),
+                "action": actions["p2"]["type"],
+                "move_name": actions["p2"]["move_name"]
+            })
+    except Exception as e:
+        # Skip this turn if there's any issue
+        print(f"Warning: Error saving turn data for battle {battle_id}: {e}")
+        pass
 
 
 def _extract_pokemon_species(pokemon_str: str) -> str:
     """Extrae la especie real del Pokémon (sin nickname ni género)"""
-    # Formato: "Nickname|Species, Gender" o solo "Species, Gender"
-    if "|" in pokemon_str:
-        # Tiene nickname: "Bilmuri|Okidogi, M"
-        species_part = pokemon_str.split("|")[1]
-    else:
-        # Sin nickname: "Okidogi, M"
-        species_part = pokemon_str
+    try:
+        # Formato: "Nickname|Species, Gender" o solo "Species, Gender"
+        if "|" in pokemon_str:
+            # Tiene nickname: "Bilmuri|Okidogi, M"
+            species_part = pokemon_str.split("|")[1]
+        else:
+            # Sin nickname: "Okidogi, M"
+            species_part = pokemon_str
 
-    # Quitar género: "Okidogi, M" -> "Okidogi"
-    return species_part.split(",")[0].strip()
+        # Quitar género: "Okidogi, M" -> "Okidogi"
+        return species_part.split(",")[0].strip()
+    except (AttributeError, IndexError):
+        return "Unknown"
 
 
 def _parse_hp(hp_str: str) -> int:
     """Parsea string de HP como '80/100' a porcentaje"""
-    if "/" in hp_str:
-        current, total = hp_str.split("/")
-        try:
+    try:
+        if "/" in hp_str:
+            current, total = hp_str.split("/")
             return int((float(current) / float(total)) * 100)
-        except ValueError:
-            return 100
-    return 100
+        return 100
+    except (ValueError, ZeroDivisionError):
+        return 100
 
 
 def _classify_move(move_name: str) -> str:
@@ -294,6 +319,8 @@ def parse_multiple_logs(log_files: List[str]) -> pd.DataFrame:
         DataFrame combinado con todos los turnos
     """
     all_data = []
+    successful = 0
+    failed = 0
 
     for log_file in log_files:
         try:
@@ -303,15 +330,29 @@ def parse_multiple_logs(log_files: List[str]) -> pd.DataFrame:
 
             battle_id = log_file.split("/")[-1].replace(".log", "")
             df = parse_replay_log(content, battle_id)
-            all_data.append(df)
+
+            if not df.empty:
+                all_data.append(df)
+                successful += 1
+                if successful % 50 == 0:
+                    print(f"  Procesados exitosamente: {successful}")
+            else:
+                failed += 1
+                print(f"  Log vacío: {log_file}")
 
         except Exception as e:
-            print(f"Error procesando {log_file}: {e}")
-            continue
+            failed += 1
+            print(f"Error procesando {log_file}: {str(e)}")
+            # Continue with next log instead of failing completely
+
+    print(f"\nResumen: {successful} exitosos, {failed} fallidos")
 
     if all_data:
-        return pd.concat(all_data, ignore_index=True)
+        combined_df = pd.concat(all_data, ignore_index=True)
+        print(f"Total turnos extraídos: {len(combined_df)}")
+        return combined_df
     else:
+        print("No se pudo procesar ningún log exitosamente")
         return pd.DataFrame()
 
 

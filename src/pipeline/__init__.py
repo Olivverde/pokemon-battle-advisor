@@ -3,6 +3,7 @@
 from .fetch import get_replay_list, download_log, save_replays
 from .parser import parse_replay_log, parse_multiple_logs, extract_features_from_turn
 from .preprocessor import preprocess_battle_data
+from .enrich import enrich_dataset, get_move_category, load_cache, save_cache
 
 __all__ = [
     "get_replay_list",
@@ -12,4 +13,8 @@ __all__ = [
     "parse_multiple_logs",
     "extract_features_from_turn",
     "preprocess_battle_data",
+    "enrich_dataset",
+    "get_move_category",
+    "load_cache",
+    "save_cache",
 ]
