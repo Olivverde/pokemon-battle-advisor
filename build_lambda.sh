@@ -7,11 +7,12 @@ echo "🔨 Empaquetando Lambda function..."
 mkdir -p lambda_package
 cd lambda_package
 
-# Instalar requests en el directorio
-pip install requests -t . --quiet
+# Instalar requests y pandas en el directorio
+pip install requests pandas -t . --quiet
 
-# Copiar el código de la función
+# Copiar el código de las funciones
 cp ../src/pipeline/lambda_scraper.py .
+cp ../src/pipeline/lambda_parser.py .
 
 # Crear el ZIP
 zip -r ../lambda_scraper.zip . -q
