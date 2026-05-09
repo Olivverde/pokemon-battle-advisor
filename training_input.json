@@ -1,0 +1,10 @@
+[{
+  "ChannelName": "train",
+  "DataSource": {
+    "S3DataSource": {
+      "S3DataType": "S3Prefix",
+      "S3Uri": "s3://pokemon-advisor-processed-317520059338/",
+      "S3DataDistributionType": "FullyReplicated"
+    }
+  }
+}]
