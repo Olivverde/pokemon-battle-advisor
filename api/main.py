@@ -105,3 +105,8 @@ def predict(payload: PredictRequest) -> PredictResponse:
 @app.get("/")
 def root() -> Dict[str, str]:
     return {"status": "ok", "message": "Pokémon Battle Advisor API"}
+
+
+from mangum import Mangum
+
+handler = Mangum(app)
