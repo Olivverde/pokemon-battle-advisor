@@ -1,0 +1,1 @@
+{"statusCode": 500, "body": "{\"detail\":\"Error de inferencia: 'XGBClassifier' object has no attribute 'use_label_encoder'\"}", "headers": {"content-length": "93", "content-type": "application/json"}, "isBase64Encoded": false}

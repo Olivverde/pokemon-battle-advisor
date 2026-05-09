@@ -1,0 +1,1 @@
+{"statusCode": 200, "body": "{\"action\":\"SWITCH\",\"probabilities\":{\"ATTACK_PHYSICAL\":0.08682498335838318,\"ATTACK_SPECIAL\":0.12336840480566025,\"STATUS\":0.20914871990680695,\"SWITCH\":0.5806578993797302}}", "headers": {"content-length": "169", "content-type": "application/json"}, "isBase64Encoded": false}

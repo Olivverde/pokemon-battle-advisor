@@ -1,0 +1,1 @@
+{"httpMethod":"POST","path":"/predict","headers":{"Content-Type":"application/json"},"body":"{\"hp\":75,\"hp_opp\":50,\"spikes_own\":0,\"spikes_opp\":1,\"stealth_rock_own\":0,\"stealth_rock_opp\":1}"}
