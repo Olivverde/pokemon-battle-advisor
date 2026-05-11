@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Battle Advisor</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07080d;
+      --panel: #12141b;
+      --panel-strong: #1b1f2c;
+      --text: #f5f5f5;
+      --muted: #9aa3bb;
+      --yellow: #f5c23b;
+      --blue: #4ca3ff;
+      --green: #6fcf97;
+      --red: #ff6b6b;
+      --orange: #ff9f43;
+      --border: rgba(255,255,255,0.08);
+      --shadow: 0 20px 50px rgba(0,0,0,0.35);
+      --radius: 24px;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(245,194,59,0.12), transparent 24%),
+                  linear-gradient(180deg, #07080d 0%, #0b0d14 48%, #080a11 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 32px;
+    }
+
+    .page {
+      width: min(1200px, 100%);
+      display: grid;
+      gap: 24px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 42rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .panel h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.02em;
+      color: var(--yellow);
+    }
+
+    .controls {
+      display: grid;
+      gap: 18px;
+    }
+
+    .slider-group,
+    .toggle-group,
+    .field-group {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.96rem;
+      color: var(--text);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--yellow);
+    }
+
+    .value-bubble {
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: var(--yellow);
+    }
+
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .field-row label {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .field-row input {
+      display: none;
+    }
+
+    .field-row input:checked + span {
+      background: rgba(245,194,59,0.12);
+      color: var(--yellow);
+      border-radius: 999px;
+      padding: 10px 14px;
+    }
+
+    .field-row input:checked + span::before {
+      content: "✓ ";
+    }
+
+    .checkbox-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .checkbox-row label {
+      align-items: center;
+      gap: 10px;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--yellow);
+    }
+
+    .action-area {
+      display: grid;
+      gap: 20px;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 18px 22px;
+      background: linear-gradient(135deg, #f5c23b, #d49a1d);
+      color: #08080d;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      box-shadow: 0 18px 35px rgba(0,0,0,0.18);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      opacity: 0.97;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status-card {
+      background: var(--panel-strong);
+      border-radius: 24px;
+      padding: 22px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .result-action {
+      font-size: clamp(1.8rem, 2.2vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .result-subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .probability-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .probability-item {
+      display: grid;
+      gap: 8px;
+    }
+
+    .probability-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .bar {
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    .bar-inner {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      transition: width 0.4s ease;
+    }
+
+    .bar-switch { background: var(--blue); }
+    .bar-status { background: var(--green); }
+    .bar-attack_physical { background: var(--red); }
+    .bar-attack_special { background: var(--orange); }
+
+    .message {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(245,194,59,0.08);
+      color: var(--yellow);
+      border: 1px solid rgba(245,194,59,0.2);
+      font-size: 0.98rem;
+    }
+
+    @media (max-width: 960px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1>Pokémon Battle Advisor</h1>
+        <p>Elige la situación de tu Pokémon y el rival para obtener una recomendación de batalla basada en las probabilidades de cada acción.</p>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Tu Pokémon</h2>
+        <div class="controls">
+          <div class="slider-group">
+            <label for="hp">HP propio
+              <span class="value-bubble" id="hpValue">75</span>
+            </label>
+            <input type="range" id="hp" min="0" max="100" value="75" />
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Oponente</h2>
+        <div class="controls">
+          <div class="slider-group">
+            <label for="hpOpp">HP oponente
+              <span class="value-bubble" id="hpOppValue">50</span>
+            </label>
+            <input type="range" id="hpOpp" min="0" max="100" value="50" />
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>Estado del campo</h2>
+        <div class="controls">
+          <div class="field-group">
+            <div>
+              <label>Spikes propios</label>
+              <div class="field-row" id="spikesOwnGroup">
+                <label><input type="radio" name="spikesOwn" value="0" checked /><span>0</span></label>
+                <label><input type="radio" name="spikesOwn" value="1" /><span>1</span></label>
+                <label><input type="radio" name="spikesOwn" value="2" /><span>2</span></label>
+                <label><input type="radio" name="spikesOwn" value="3" /><span>3</span></label>
+              </div>
+            </div>
+            <div>
+              <label>Spikes oponente</label>
+              <div class="field-row" id="spikesOppGroup">
+                <label><input type="radio" name="spikesOpp" value="0" checked /><span>0</span></label>
+                <label><input type="radio" name="spikesOpp" value="1" /><span>1</span></label>
+                <label><input type="radio" name="spikesOpp" value="2" /><span>2</span></label>
+                <label><input type="radio" name="spikesOpp" value="3" /><span>3</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="checkbox-row">
+            <label><input type="checkbox" id="stealthRockOwn" /> Stealth Rock propio</label>
+            <label><input type="checkbox" id="stealthRockOpp" /> Stealth Rock oponente</label>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel action-area">
+        <button id="askButton" type="button">¿Qué hago?</button>
+        <div id="feedback" class="message" style="display:none;"></div>
+      </article>
+
+      <article class="panel status-card">
+        <div>
+          <p class="result-subtitle">Recomendación</p>
+          <h2 class="result-action" id="resultAction">Esperando acción...</h2>
+        </div>
+        <div class="probability-list">
+          <div class="probability-item">
+            <div class="probability-label"><span>SWITCH</span><span id="probSwitch">0%</span></div>
+            <div class="bar"><div class="bar-inner bar-switch" id="barSwitch"></div></div>
+          </div>
+          <div class="probability-item">
+            <div class="probability-label"><span>STATUS</span><span id="probStatus">0%</span></div>
+            <div class="bar"><div class="bar-inner bar-status" id="barStatus"></div></div>
+          </div>
+          <div class="probability-item">
+            <div class="probability-label"><span>ATTACK_PHYSICAL</span><span id="probAttackPhysical">0%</span></div>
+            <div class="bar"><div class="bar-inner bar-attack_physical" id="barAttackPhysical"></div></div>
+          </div>
+          <div class="probability-item">
+            <div class="probability-label"><span>ATTACK_SPECIAL</span><span id="probAttackSpecial">0%</span></div>
+            <div class="bar"><div class="bar-inner bar-attack_special" id="barAttackSpecial"></div></div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const hpInput = document.getElementById('hp');
+    const hpOppInput = document.getElementById('hpOpp');
+    const hpValue = document.getElementById('hpValue');
+    const hpOppValue = document.getElementById('hpOppValue');
+    const askButton = document.getElementById('askButton');
+    const resultAction = document.getElementById('resultAction');
+    const feedback = document.getElementById('feedback');
+    const endpoint = 'https://6o9h73xv7g.execute-api.us-east-1.amazonaws.com/predict';
+
+    const probElements = {
+      SWITCH: { percent: document.getElementById('probSwitch'), bar: document.getElementById('barSwitch') },
+      STATUS: { percent: document.getElementById('probStatus'), bar: document.getElementById('barStatus') },
+      ATTACK_PHYSICAL: { percent: document.getElementById('probAttackPhysical'), bar: document.getElementById('barAttackPhysical') },
+      ATTACK_SPECIAL: { percent: document.getElementById('probAttackSpecial'), bar: document.getElementById('barAttackSpecial') },
+    };
+
+    function updateSliderText() {
+      hpValue.textContent = hpInput.value;
+      hpOppValue.textContent = hpOppInput.value;
+    }
+
+    function getSelectedValue(name) {
+      const checked = document.querySelector(`input[name="${name}"]:checked`);
+      return checked ? Number(checked.value) : 0;
+    }
+
+    function setFeedback(message, isError = false) {
+      feedback.textContent = message;
+      feedback.style.display = 'block';
+      feedback.style.background = isError ? 'rgba(255, 107, 107, 0.12)' : 'rgba(245, 194, 59, 0.08)';
+      feedback.style.borderColor = isError ? 'rgba(255, 107, 107, 0.25)' : 'rgba(245, 194, 59, 0.2)';
+      feedback.style.color = isError ? '#ff9aa2' : 'var(--yellow)';
+    }
+
+    function hideFeedback() {
+      feedback.style.display = 'none';
+    }
+
+    function displayResult(data) {
+      const action = data.action || 'SIN DATOS';
+      resultAction.textContent = action;
+
+      Object.keys(probElements).forEach(key => {
+        const value = data.probabilities?.[key] ?? 0;
+        const percent = Math.round(value * 100);
+        probElements[key].percent.textContent = `${percent}%`;
+        probElements[key].bar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+      });
+    }
+
+    async function fetchRecommendation() {
+      hideFeedback();
+      resultAction.textContent = 'Cargando...';
+      askButton.disabled = true;
+
+      const payload = {
+        hp: Number(hpInput.value),
+        hp_opp: Number(hpOppInput.value),
+        spikes_own: getSelectedValue('spikesOwn'),
+        spikes_opp: getSelectedValue('spikesOpp'),
+        stealth_rock_own: document.getElementById('stealthRockOwn').checked ? 1 : 0,
+        stealth_rock_opp: document.getElementById('stealthRockOpp').checked ? 1 : 0,
+      };
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error de red: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        if (!result.action || !result.probabilities) {
+          throw new Error('Respuesta inválida del servicio.');
+        }
+
+        displayResult(result);
+      } catch (error) {
+        resultAction.textContent = 'No disponible';
+        setFeedback('No se pudo obtener la recomendación. Revisa tu conexión o inténtalo de nuevo más tarde.', true);
+        console.error(error);
+      } finally {
+        askButton.disabled = false;
+      }
+    }
+
+    hpInput.addEventListener('input', updateSliderText);
+    hpOppInput.addEventListener('input', updateSliderText);
+    askButton.addEventListener('click', fetchRecommendation);
+
+    updateSliderText();
+    displayResult({ action: 'ESPERANDO', probabilities: { SWITCH: 0, STATUS: 0, ATTACK_PHYSICAL: 0, ATTACK_SPECIAL: 0 } });
+  </script>
+</body>
+</html>

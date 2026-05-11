@@ -5,12 +5,21 @@ import joblib
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Pokémon Battle Advisor API",
     description="API de inferencia para el modelo Pokémon Battle Advisor",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 MODEL_PATH = Path(__file__).resolve().parents[1] / "models" / "pokemon_advisor.joblib"
