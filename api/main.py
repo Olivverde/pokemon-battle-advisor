@@ -1,11 +1,13 @@
+import os
 from pathlib import Path
 from typing import Dict
 
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel, Field
 
 app = FastAPI(
@@ -21,6 +23,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+API_KEY = os.environ.get("API_KEY", "")
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    if not API_KEY or api_key != API_KEY:
+        raise HTTPException(status_code=403, detail="API Key inválida")
+    return api_key
+
 
 MODEL_PATH = Path(__file__).resolve().parents[1] / "models" / "pokemon_advisor.joblib"
 ENCODER_PATH = Path(__file__).resolve().parents[1] / "models" / "label_encoder.joblib"
@@ -79,7 +91,7 @@ def health() -> Dict[str, str]:
 
 
 @app.post("/predict", response_model=PredictResponse)
-def predict(payload: PredictRequest) -> PredictResponse:
+def predict(payload: PredictRequest, api_key: str = Security(verify_api_key)) -> PredictResponse:
     if model is None or label_encoder is None:
         raise HTTPException(status_code=500, detail="Modelo no cargado")
 

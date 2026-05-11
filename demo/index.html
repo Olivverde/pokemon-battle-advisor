@@ -169,6 +169,26 @@
       gap: 20px;
     }
 
+    .api-key-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      color: var(--text);
+      font-size: 0.96rem;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .api-key-input:focus {
+      border-color: rgba(245,194,59,0.4);
+    }
+
+    .api-key-input::placeholder {
+      color: var(--muted);
+    }
+
     button {
       width: 100%;
       border: none;
@@ -336,6 +356,13 @@
 
     <section class="grid">
       <article class="panel action-area">
+        <input
+          type="password"
+          id="apiKey"
+          class="api-key-input"
+          placeholder="Ingresa tu API Key"
+          autocomplete="off"
+        />
         <button id="askButton" type="button">¿Qué hago?</button>
         <div id="feedback" class="message" style="display:none;"></div>
       </article>
@@ -420,6 +447,13 @@
 
     async function fetchRecommendation() {
       hideFeedback();
+
+      const apiKey = document.getElementById('apiKey').value.trim();
+      if (!apiKey) {
+        setFeedback('Por favor ingresa tu API Key', true);
+        return;
+      }
+
       resultAction.textContent = 'Cargando...';
       askButton.disabled = true;
 
@@ -437,9 +471,14 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'X-API-Key': apiKey,
           },
           body: JSON.stringify(payload),
         });
+
+        if (response.status === 403) {
+          throw new Error('403');
+        }
 
         if (!response.ok) {
           throw new Error(`Error de red: ${response.status} ${response.statusText}`);
@@ -453,7 +492,11 @@
         displayResult(result);
       } catch (error) {
         resultAction.textContent = 'No disponible';
-        setFeedback('No se pudo obtener la recomendación. Revisa tu conexión o inténtalo de nuevo más tarde.', true);
+        if (error.message === '403') {
+          setFeedback('API Key inválida', true);
+        } else {
+          setFeedback('No se pudo obtener la recomendación. Revisa tu conexión o inténtalo de nuevo más tarde.', true);
+        }
         console.error(error);
       } finally {
         askButton.disabled = false;
